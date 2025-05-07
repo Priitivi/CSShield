@@ -11,17 +11,18 @@ const hostsPath = process.platform === 'win32'
   ? 'C:\\Windows\\System32\\drivers\\etc\\hosts'
   : '/etc/hosts';
 
+const blocklistPath = path.join(__dirname, '../blocklist.json');
+
 function createWindow() {
   const mainWindow = new BrowserWindow({
-    width: 400,
-    height: 500,
+    width: 700,
+    height: 800,
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'),
     }
   });
 
   mainWindow.loadFile(path.join(__dirname, 'index.html'));
-
 
   // OPTIONAL: Open DevTools (commented out)
   // mainWindow.webContents.openDevTools();
@@ -34,36 +35,76 @@ app.whenReady().then(() => {
     if (BrowserWindow.getAllWindows().length === 0) createWindow();
   });
 
-  // 🔗 IPC: Handle Block command
+  // 🔗 Get Blacklist
+  ipcMain.handle('get-blacklist', async () => {
+    try {
+      const data = fs.readFileSync(blocklistPath, 'utf8');
+      const list = JSON.parse(data);
+      return list;
+    } catch (err) {
+      console.error('Error reading blocklist:', err);
+      return [];
+    }
+  });
+
+  // 🔗 Add Domain
+  ipcMain.handle('add-domain', async (event, domain) => {
+    try {
+      const data = fs.readFileSync(blocklistPath, 'utf8');
+      const list = JSON.parse(data);
+      if (!list.includes(domain)) {
+        list.push(domain);
+        fs.writeFileSync(blocklistPath, JSON.stringify(list, null, 2));
+      }
+      return list;
+    } catch (err) {
+      console.error('Error adding domain:', err);
+      return [];
+    }
+  });
+
+  // 🔗 Remove Domain
+  ipcMain.handle('remove-domain', async (event, domain) => {
+    try {
+      const data = fs.readFileSync(blocklistPath, 'utf8');
+      let list = JSON.parse(data);
+      list = list.filter(d => d !== domain);
+      fs.writeFileSync(blocklistPath, JSON.stringify(list, null, 2));
+      return list;
+    } catch (err) {
+      console.error('Error removing domain:', err);
+      return [];
+    }
+  });
+
+  // 🔗 Block Domains (reads real JSON file)
   ipcMain.handle('block-domains', async () => {
-    const blockList = [
-      'csgoempire.com',
-      'csgoroll.com',
-      'csgolive.com',
-      'gamdom.com',
-      'csgobetting.com'
-      // Add more domains if you want
-    ];
-  
+    const data = fs.readFileSync(blocklistPath, 'utf8');
+    const blockList = JSON.parse(data);
+
+    if (blockList.length === 0) {
+      return 'No domains to block.';
+    }
+
     let blockEntries = '';
     blockList.forEach(domain => {
       blockEntries += `127.0.0.1 ${domain}\n`;
     });
-  
+
     const tempFile = path.join(app.getPath('temp'), 'cs_blocklist.txt');
-  
+
     return new Promise((resolve, reject) => {
-      // 1️⃣ Write to a temp file
+      // 1️⃣ Write blocklist to a temp file
       fs.writeFile(tempFile, blockEntries, (err) => {
         if (err) {
           console.error('Error writing temp blocklist file:', err);
           reject('Failed to create blocklist file');
           return;
         }
-  
-        // 2️⃣ Append the temp file to the hosts file (as admin)
+
+        // 2️⃣ Append temp file to hosts
         const command = `type "${tempFile}" >> "${hostsPath}"`; // Windows style
-  
+
         sudo.exec(command, options, (error, stdout, stderr) => {
           if (error) {
             console.error('Error blocking domains:', error);
@@ -76,11 +117,8 @@ app.whenReady().then(() => {
       });
     });
   });
-  
 
-  
-
-  // 🔗 IPC: Handle Restore command
+  // 🔗 Restore Hosts File
   ipcMain.handle('restore-hosts', async () => {
     return new Promise((resolve, reject) => {
       fs.readFile(hostsPath, 'utf8', (err, data) => {
@@ -90,8 +128,12 @@ app.whenReady().then(() => {
           return;
         }
 
+        const dataObj = fs.readFileSync(blocklistPath, 'utf8');
+        const list = JSON.parse(dataObj);
+
         // Remove blocked domains
-        const blockRegex = /(127\.0\.0\.1\s+(csgoempire\.com|csgoroll\.com|csgolive\.com|gamdom\.com|csgobetting\.com)\s*\n?)/g;
+        const regexParts = list.map(domain => `127\\.0\\.0\\.1\\s+${domain.replace('.', '\\.')}`);
+        const blockRegex = new RegExp(`(${regexParts.join('|')})\\s*\\n?`, 'g');
         const cleaned = data.replace(blockRegex, '');
 
         const tmpFile = path.join(app.getPath('temp'), 'hosts_tmp');
@@ -103,7 +145,7 @@ app.whenReady().then(() => {
             return;
           }
 
-          sudo.exec(`mv "${tmpFile}" "${hostsPath}"`, options, (error, stdout, stderr) => {
+          sudo.exec(`move "${tmpFile}" "${hostsPath}"`, options, (error, stdout, stderr) => {
             if (error) {
               console.error('Error restoring hosts file:', error);
               reject('Failed to restore hosts file');

@@ -1,85 +1,200 @@
 <!DOCTYPE html>
 <html>
-  <head>
-    <meta charset="UTF-8" />
-    <title>CSShield 🛡️</title>
-    <style>
-      body {
-        font-family: Arial, sans-serif;
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        justify-content: center;
-        height: 100vh;
-        background-color: #1e1e1e;
-        color: #f0f0f0;
-        margin: 0;
-      }
-      h1 {
-        margin-bottom: 30px;
-        font-size: 2rem;
-      }
-      button {
-        width: 220px;
-        padding: 15px;
-        margin: 10px;
-        font-size: 1rem;
-        border: none;
-        border-radius: 5px;
-        cursor: pointer;
-        transition: 0.3s;
-      }
-      #blockBtn {
-        background-color: #d9534f;
-        color: white;
-      }
-      #blockBtn:hover {
-        background-color: #c9302c;
-      }
-      #restoreBtn {
-        background-color: #5bc0de;
-        color: white;
-      }
-      #restoreBtn:hover {
-        background-color: #31b0d5;
-      }
-      #status {
-        margin-top: 30px;
-        font-size: 1.1rem;
-        text-align: center;
-      }
-    </style>
-  </head>
-  <body>
-    <h1>🛡️ CSShield</h1>
-    <button id="blockBtn">🚫 Block Gambling Sites</button>
-    <button id="restoreBtn">🔄 Restore Hosts File</button>
-    <div id="status">⚠️ No action taken yet</div>
+<head>
+  <meta charset="UTF-8" />
+  <title>CSShield 🛡️</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: flex-start;
+      padding: 30px;
+      background-color: #1e1e1e;
+      color: #f0f0f0;
+      margin: 0;
+    }
+    h1 {
+      margin-bottom: 20px;
+      font-size: 2.5rem;
+    }
+    button {
+      width: 220px;
+      padding: 15px;
+      margin: 10px;
+      font-size: 1rem;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+      transition: 0.3s;
+    }
+    #blockBtn {
+      background-color: #d9534f;
+      color: white;
+    }
+    #blockBtn:hover {
+      background-color: #c9302c;
+    }
+    #restoreBtn {
+      background-color: #5bc0de;
+      color: white;
+    }
+    #restoreBtn:hover {
+      background-color: #31b0d5;
+    }
+    #status {
+      margin-top: 20px;
+      font-size: 1.1rem;
+      text-align: center;
+    }
+    #blacklistSection {
+      margin-top: 40px;
+      width: 100%;
+      max-width: 600px;
+      background-color: #2c2c2c;
+      padding: 20px;
+      border-radius: 8px;
+      box-shadow: 0 0 10px rgba(0,0,0,0.5);
+    }
+    #blacklistSection h2 {
+      margin-top: 0;
+      text-align: center;
+    }
+    #domainList {
+      list-style: none;
+      padding: 0;
+      margin-top: 20px;
+    }
+    .domainItem {
+      display: flex;
+      justify-content: space-between;
+      align: center;
+      padding: 8px 0;
+      border-bottom: 1px solid #444;
+    }
+    .removeBtn {
+      background-color: #d9534f;
+      color: white;
+      border: none;
+      border-radius: 4px;
+      padding: 5px 10px;
+      cursor: pointer;
+    }
+    .removeBtn:hover {
+      background-color: #c9302c;
+    }
+    #addDomainForm {
+      display: flex;
+      margin-top: 20px;
+    }
+    #newDomain {
+      flex: 1;
+      padding: 10px;
+      border-radius: 5px;
+      border: none;
+      margin-right: 10px;
+    }
+    #addBtn {
+      background-color: #5cb85c;
+      color: white;
+      border: none;
+      border-radius: 5px;
+      padding: 10px 20px;
+      cursor: pointer;
+    }
+    #addBtn:hover {
+      background-color: #449d44;
+    }
+  </style>
+</head>
+<body>
+  <h1>🛡️ CSShield</h1>
+  <button id="blockBtn">🚫 Block Gambling Sites</button>
+  <button id="restoreBtn">🔄 Restore Hosts File</button>
+  <div id="status">⚠️ No action taken yet</div>
 
-    <script>
-      const blockBtn = document.getElementById('blockBtn');
-      const restoreBtn = document.getElementById('restoreBtn');
-      const status = document.getElementById('status');
+  <div id="blacklistSection">
+    <h2>Manage Blacklist</h2>
+    <ul id="domainList">
+      <!-- Domains will be listed here -->
+    </ul>
+    <form id="addDomainForm">
+      <input type="text" id="newDomain" placeholder="Enter new domain" required>
+      <button type="submit" id="addBtn">Add</button>
+    </form>
+  </div>
 
-      blockBtn.addEventListener('click', () => {
-        window.electronAPI.blockDomains().then((result) => {
-          status.textContent = '✅ ' + result;
-        }).catch((err) => {
-          console.error(err);
-          status.textContent = '❌ Error blocking domains';
-        });
+  <script>
+    const blockBtn = document.getElementById('blockBtn');
+    const restoreBtn = document.getElementById('restoreBtn');
+    const status = document.getElementById('status');
+    const domainList = document.getElementById('domainList');
+    const addDomainForm = document.getElementById('addDomainForm');
+    const newDomainInput = document.getElementById('newDomain');
+
+    let blacklist = [];
+
+    function renderBlacklist() {
+      domainList.innerHTML = '';
+      blacklist.forEach((domain) => {
+        const li = document.createElement('li');
+        li.className = 'domainItem';
+        li.innerHTML = `
+          <span>${domain}</span>
+          <button class="removeBtn" data-domain="${domain}">❌ Remove</button>
+        `;
+        domainList.appendChild(li);
       });
+    }
 
+    // Load blacklist from backend on startup
+    window.electronAPI.getBlacklist().then((list) => {
+      blacklist = list;
+      renderBlacklist();
+    });
 
-      restoreBtn.addEventListener('click', () => {
-        window.electronAPI.restoreHosts().then((result) => {
-          status.textContent = '✅ ' + result;
-        }).catch((err) => {
-          console.error(err);
-          status.textContent = '❌ Error restoring hosts file';
+    // Handle adding new domain
+    addDomainForm.addEventListener('submit', (e) => {
+      e.preventDefault();
+      const newDomain = newDomainInput.value.trim();
+      if (newDomain && !blacklist.includes(newDomain)) {
+        window.electronAPI.addDomain(newDomain).then((list) => {
+          blacklist = list;
+          renderBlacklist();
+          newDomainInput.value = '';
         });
-      });
+      }
+    });
 
-    </script>
-  </body>
+    // Handle removing a domain
+    domainList.addEventListener('click', (e) => {
+      if (e.target.classList.contains('removeBtn')) {
+        const domain = e.target.getAttribute('data-domain');
+        window.electronAPI.removeDomain(domain).then((list) => {
+          blacklist = list;
+          renderBlacklist();
+        });
+      }
+    });
+
+    blockBtn.addEventListener('click', () => {
+      window.electronAPI.blockDomains().then((result) => {
+        status.textContent = '✅ ' + result;
+      }).catch((err) => {
+        console.error(err);
+        status.textContent = '❌ Error blocking domains';
+      });
+    });
+
+    restoreBtn.addEventListener('click', () => {
+      window.electronAPI.restoreHosts().then((result) => {
+        status.textContent = '✅ ' + result;
+      }).catch((err) => {
+        console.error(err);
+        status.textContent = '❌ Error restoring hosts file';
+      });
+    });
+  </script>
+</body>
 </html>
