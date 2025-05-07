@@ -1,51 +1,123 @@
-const { app, BrowserWindow } = require('electron');
-const path = require('node:path');
+const { app, BrowserWindow, ipcMain } = require('electron');
+const path = require('path');
+const fs = require('fs');
+const sudo = require('sudo-prompt');
 
-// Handle creating/removing shortcuts on Windows when installing/uninstalling.
-if (require('electron-squirrel-startup')) {
-  app.quit();
-}
-
-const createWindow = () => {
-  // Create the browser window.
-  const mainWindow = new BrowserWindow({
-    width: 800,
-    height: 600,
-    webPreferences: {
-      preload: path.join(__dirname, 'preload.js'),
-    },
-  });
-
-  // and load the index.html of the app.
-  mainWindow.loadFile(path.join(__dirname, 'index.html'));
-
-  // Open the DevTools.
-  mainWindow.webContents.openDevTools();
+const options = {
+  name: 'CSShield'
 };
 
-// This method will be called when Electron has finished
-// initialization and is ready to create browser windows.
-// Some APIs can only be used after this event occurs.
+const hostsPath = process.platform === 'win32'
+  ? 'C:\\Windows\\System32\\drivers\\etc\\hosts'
+  : '/etc/hosts';
+
+function createWindow() {
+  const mainWindow = new BrowserWindow({
+    width: 400,
+    height: 500,
+    webPreferences: {
+      preload: path.join(__dirname, 'preload.js'),
+    }
+  });
+
+  mainWindow.loadFile(path.join(__dirname, 'index.html'));
+
+
+  // OPTIONAL: Open DevTools (commented out)
+  // mainWindow.webContents.openDevTools();
+}
+
 app.whenReady().then(() => {
   createWindow();
 
-  // On OS X it's common to re-create a window in the app when the
-  // dock icon is clicked and there are no other windows open.
-  app.on('activate', () => {
-    if (BrowserWindow.getAllWindows().length === 0) {
-      createWindow();
-    }
+  app.on('activate', function () {
+    if (BrowserWindow.getAllWindows().length === 0) createWindow();
+  });
+
+  // 🔗 IPC: Handle Block command
+  ipcMain.handle('block-domains', async () => {
+    const blockList = [
+      'csgoempire.com',
+      'csgoroll.com',
+      'csgolive.com',
+      'gamdom.com',
+      'csgobetting.com'
+      // Add more domains if you want
+    ];
+  
+    let blockEntries = '';
+    blockList.forEach(domain => {
+      blockEntries += `127.0.0.1 ${domain}\n`;
+    });
+  
+    const tempFile = path.join(app.getPath('temp'), 'cs_blocklist.txt');
+  
+    return new Promise((resolve, reject) => {
+      // 1️⃣ Write to a temp file
+      fs.writeFile(tempFile, blockEntries, (err) => {
+        if (err) {
+          console.error('Error writing temp blocklist file:', err);
+          reject('Failed to create blocklist file');
+          return;
+        }
+  
+        // 2️⃣ Append the temp file to the hosts file (as admin)
+        const command = `type "${tempFile}" >> "${hostsPath}"`; // Windows style
+  
+        sudo.exec(command, options, (error, stdout, stderr) => {
+          if (error) {
+            console.error('Error blocking domains:', error);
+            reject('Failed to block domains');
+          } else {
+            console.log('Domains blocked successfully.');
+            resolve('Blocked domains successfully');
+          }
+        });
+      });
+    });
+  });
+  
+
+  
+
+  // 🔗 IPC: Handle Restore command
+  ipcMain.handle('restore-hosts', async () => {
+    return new Promise((resolve, reject) => {
+      fs.readFile(hostsPath, 'utf8', (err, data) => {
+        if (err) {
+          console.error('Error reading hosts file:', err);
+          reject('Failed to read hosts file');
+          return;
+        }
+
+        // Remove blocked domains
+        const blockRegex = /(127\.0\.0\.1\s+(csgoempire\.com|csgoroll\.com|csgolive\.com|gamdom\.com|csgobetting\.com)\s*\n?)/g;
+        const cleaned = data.replace(blockRegex, '');
+
+        const tmpFile = path.join(app.getPath('temp'), 'hosts_tmp');
+
+        fs.writeFile(tmpFile, cleaned, (err) => {
+          if (err) {
+            console.error('Error writing temp hosts file:', err);
+            reject('Failed to write temp file');
+            return;
+          }
+
+          sudo.exec(`mv "${tmpFile}" "${hostsPath}"`, options, (error, stdout, stderr) => {
+            if (error) {
+              console.error('Error restoring hosts file:', error);
+              reject('Failed to restore hosts file');
+            } else {
+              console.log('Hosts file restored.');
+              resolve('Restored hosts file');
+            }
+          });
+        });
+      });
+    });
   });
 });
 
-// Quit when all windows are closed, except on macOS. There, it's common
-// for applications and their menu bar to stay active until the user quits
-// explicitly with Cmd + Q.
-app.on('window-all-closed', () => {
-  if (process.platform !== 'darwin') {
-    app.quit();
-  }
+app.on('window-all-closed', function () {
+  if (process.platform !== 'darwin') app.quit();
 });
-
-// In this file you can include the rest of your app's specific main process
-// code. You can also put them in separate files and import them here.

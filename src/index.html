@@ -2,11 +2,84 @@
 <html>
   <head>
     <meta charset="UTF-8" />
-    <title>Hello World!</title>
-    <link rel="stylesheet" href="index.css" />
+    <title>CSShield 🛡️</title>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        height: 100vh;
+        background-color: #1e1e1e;
+        color: #f0f0f0;
+        margin: 0;
+      }
+      h1 {
+        margin-bottom: 30px;
+        font-size: 2rem;
+      }
+      button {
+        width: 220px;
+        padding: 15px;
+        margin: 10px;
+        font-size: 1rem;
+        border: none;
+        border-radius: 5px;
+        cursor: pointer;
+        transition: 0.3s;
+      }
+      #blockBtn {
+        background-color: #d9534f;
+        color: white;
+      }
+      #blockBtn:hover {
+        background-color: #c9302c;
+      }
+      #restoreBtn {
+        background-color: #5bc0de;
+        color: white;
+      }
+      #restoreBtn:hover {
+        background-color: #31b0d5;
+      }
+      #status {
+        margin-top: 30px;
+        font-size: 1.1rem;
+        text-align: center;
+      }
+    </style>
   </head>
   <body>
-    <h1>💖 Hello World!</h1>
-    <p>Welcome to your Electron application.</p>
+    <h1>🛡️ CSShield</h1>
+    <button id="blockBtn">🚫 Block Gambling Sites</button>
+    <button id="restoreBtn">🔄 Restore Hosts File</button>
+    <div id="status">⚠️ No action taken yet</div>
+
+    <script>
+      const blockBtn = document.getElementById('blockBtn');
+      const restoreBtn = document.getElementById('restoreBtn');
+      const status = document.getElementById('status');
+
+      blockBtn.addEventListener('click', () => {
+        window.electronAPI.blockDomains().then((result) => {
+          status.textContent = '✅ ' + result;
+        }).catch((err) => {
+          console.error(err);
+          status.textContent = '❌ Error blocking domains';
+        });
+      });
+
+
+      restoreBtn.addEventListener('click', () => {
+        window.electronAPI.restoreHosts().then((result) => {
+          status.textContent = '✅ ' + result;
+        }).catch((err) => {
+          console.error(err);
+          status.textContent = '❌ Error restoring hosts file';
+        });
+      });
+
+    </script>
   </body>
 </html>
