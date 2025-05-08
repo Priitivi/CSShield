@@ -61,6 +61,7 @@ npm start
 The app will launch in a desktop window. If it's your first time blocking domains, the app will automatically back up your original hosts file for safety.
 ---
 ## 📂 File Structure
+```
 /CSShield
 ├── blocklist.json       # Your blacklist of domains
 ├── logs.json            # Action logs
@@ -73,7 +74,7 @@ The app will launch in a desktop window. If it's your first time blocking domain
 ├── README.md            # This file
 ├── package.json
 └── .gitignore
-
+```
 ---
 ## ⚠️ Disclaimer
 Use at your own risk.
