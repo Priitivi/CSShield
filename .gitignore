@@ -93,3 +93,6 @@ out/
 
 # Local Host files (SAVES)
 hosts_backup_original
+
+# Settings (MONEY)
+settings.json

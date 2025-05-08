@@ -7,5 +7,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
   getBlacklist: () => ipcRenderer.invoke('get-blacklist'),
   addDomain: (domain) => ipcRenderer.invoke('add-domain', domain),
   removeDomain: (domain) => ipcRenderer.invoke('remove-domain', domain),
-  getLogs: () => ipcRenderer.invoke('get-logs')
+  getLogs: () => ipcRenderer.invoke('get-logs'),
+  getSettings: () => ipcRenderer.invoke('get-settings'),
+  saveSettings: (newSettings) => ipcRenderer.invoke('save-settings', newSettings)
 });

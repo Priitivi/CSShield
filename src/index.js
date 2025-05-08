@@ -14,6 +14,7 @@ const hostsPath = process.platform === 'win32'
 const blocklistPath = path.join(__dirname, '../blocklist.json');
 const logsPath = path.join(__dirname, '../logs.json');
 const backupPath = path.join(__dirname, '../hosts_backup_original');
+const settingsPath = path.join(__dirname, '../settings.json');
 
 function createWindow() {
   const mainWindow = new BrowserWindow({
@@ -38,7 +39,7 @@ function writeLog(action, details = '') {
   } catch (err) {
     console.error('Failed to read logs:', err);
   }
-  logs.unshift(entry); // add newest at top
+  logs.unshift(entry);
   fs.writeFileSync(logsPath, JSON.stringify(logs, null, 2));
 }
 
@@ -96,7 +97,6 @@ app.whenReady().then(() => {
     const tempFile = path.join(app.getPath('temp'), 'cs_blocklist.txt');
 
     return new Promise((resolve, reject) => {
-      // First: backup if not exists
       if (!fs.existsSync(backupPath)) {
         fs.copyFile(hostsPath, backupPath, (err) => {
           if (err) {
@@ -108,14 +108,13 @@ app.whenReady().then(() => {
         });
       }
 
-      // Write temp file
       fs.writeFile(tempFile, blockEntries, (err) => {
         if (err) {
           reject('Failed to create blocklist file');
           return;
         }
 
-        const command = `type "${tempFile}" >> "${hostsPath}"`; // Windows style
+        const command = `type "${tempFile}" >> "${hostsPath}"`;
 
         sudo.exec(command, options, (error) => {
           if (error) {
@@ -171,7 +170,7 @@ app.whenReady().then(() => {
         return;
       }
 
-      const command = `copy "${backupPath}" "${hostsPath}"`; // Windows style
+      const command = `copy "${backupPath}" "${hostsPath}"`;
 
       sudo.exec(command, options, (error) => {
         if (error) {
@@ -190,6 +189,25 @@ app.whenReady().then(() => {
       return JSON.parse(data);
     } catch {
       return [];
+    }
+  });
+
+  // === Settings IPC ===
+  ipcMain.handle('get-settings', async () => {
+    try {
+      const data = fs.readFileSync(settingsPath, 'utf8');
+      return JSON.parse(data);
+    } catch {
+      return null;
+    }
+  });
+
+  ipcMain.handle('save-settings', async (event, newSettings) => {
+    try {
+      fs.writeFileSync(settingsPath, JSON.stringify(newSettings, null, 2));
+      return true;
+    } catch {
+      return false;
     }
   });
 });

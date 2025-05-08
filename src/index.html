@@ -92,6 +92,7 @@
       text-align: center;
       box-shadow: 0 0 10px rgba(0,0,0,0.3);
     }
+    /* Blacklist */
     #domainList {
       list-style: none;
       padding: 0;
@@ -139,6 +140,7 @@
     #addBtn:hover {
       background-color: #449d44;
     }
+    /* Logs */
     #logsList {
       list-style: none;
       padding: 0;
@@ -152,6 +154,38 @@
       margin-bottom: 10px;
       box-shadow: 0 0 5px rgba(0,0,0,0.2);
     }
+    /* Money Saved */
+    #moneyStats {
+      margin-top: 20px;
+      font-size: 1.2rem;
+    }
+    #savingsChart {
+      max-width: 600px;
+      margin-top: 30px;
+    }
+    #setupForm {
+      max-width: 400px;
+      margin-top: 20px;
+    }
+    #setupForm input {
+      width: 100%;
+      padding: 10px;
+      margin: 10px 0;
+      border-radius: 5px;
+      border: none;
+    }
+    #setupForm button {
+      width: 100%;
+      background-color: #5cb85c;
+      color: white;
+      border: none;
+      border-radius: 5px;
+      padding: 10px;
+      cursor: pointer;
+    }
+    #setupForm button:hover {
+      background-color: #449d44;
+    }
   </style>
 </head>
 <body>
@@ -162,6 +196,7 @@
     <div class="nav-link active" data-section="dashboard">🏠 Dashboard</div>
     <div class="nav-link" data-section="blacklist">📝 Manage Blacklist</div>
     <div class="nav-link" data-section="logs">📊 Logs</div>
+    <div class="nav-link" data-section="moneySaved">💰 Money Saved</div>
   </div>
 
   <!-- Main Content -->
@@ -194,9 +229,7 @@
     <!-- Manage Blacklist Section -->
     <div id="blacklistSection" style="display:none;">
       <h2>Manage Blacklist</h2>
-      <ul id="domainList">
-        <!-- Domains will be listed here -->
-      </ul>
+      <ul id="domainList"></ul>
       <form id="addDomainForm">
         <input type="text" id="newDomain" placeholder="Enter new domain" required>
         <button type="submit" id="addBtn">Add</button>
@@ -206,11 +239,33 @@
     <!-- Logs Section -->
     <div id="logsSection" style="display:none;">
       <h2>Logs</h2>
-      <ul id="logsList">
-        <!-- Logs will be loaded here -->
-      </ul>
+      <ul id="logsList"></ul>
+    </div>
+
+    <!-- Money Saved Section -->
+    <div id="moneySavedSection" style="display:none;">
+      <h2>Money Saved</h2>
+      <div id="setupFormContainer">
+        <p>Fill in your info to calculate how much you've saved!</p>
+        <form id="setupForm">
+          <label>💸 How much did you gamble per week (£)?</label>
+          <input type="number" id="weeklySpend" placeholder="e.g. 50" required>
+          <label>📅 When did you stop gambling?</label>
+          <input type="date" id="stopDate" required>
+          <button type="submit">Save</button>
+        </form>
+      </div>
+      <div id="moneyStats" style="display:none;">
+        <p><strong>💰 Total Saved:</strong> £<span id="totalSaved">0</span></p>
+        <p><strong>📅 Started:</strong> <span id="startDate"></span></p>
+        <p><strong>💸 Weekly Spend:</strong> £<span id="weeklyAmount"></span></p>
+        <canvas id="savingsChart"></canvas>
+      </div>
     </div>
   </div>
+
+  <!-- Chart.js -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
   <script>
     // Sidebar nav switching
@@ -218,7 +273,8 @@
     const sections = {
       dashboard: document.getElementById('dashboardSection'),
       blacklist: document.getElementById('blacklistSection'),
-      logs: document.getElementById('logsSection')
+      logs: document.getElementById('logsSection'),
+      moneySaved: document.getElementById('moneySavedSection')
     };
 
     navLinks.forEach(link => {
@@ -231,14 +287,15 @@
           sections[key].style.display = (key === target) ? 'block' : 'none';
         });
 
-        if (target === 'logs') {
-          loadLogs();
-        }
+        if (target === 'logs') loadLogs();
+        if (target === 'moneySaved') loadMoneySaved();
       });
     });
 
-    // Stats + Blacklist
-    const totalDomains = document.getElementById('totalDomains');
+    // Blacklist + Stats logic stays the same...
+    // I'll pause here for length. Let me know to send the rest of the JS!
+        // Blacklist + Stats
+        const totalDomains = document.getElementById('totalDomains');
     const lastBlocked = document.getElementById('lastBlocked');
     const lastRestored = document.getElementById('lastRestored');
 
@@ -350,6 +407,91 @@
     }
 
     window.electronAPI.getLogs().then(updateStatsFromLogs);
+
+    // === Money Saved ===
+    const setupFormContainer = document.getElementById('setupFormContainer');
+    const setupForm = document.getElementById('setupForm');
+    const weeklySpendInput = document.getElementById('weeklySpend');
+    const stopDateInput = document.getElementById('stopDate');
+
+    const moneyStats = document.getElementById('moneyStats');
+    const totalSaved = document.getElementById('totalSaved');
+    const startDate = document.getElementById('startDate');
+    const weeklyAmount = document.getElementById('weeklyAmount');
+    let chart;
+
+    function loadMoneySaved() {
+      window.electronAPI.getSettings().then((settings) => {
+        if (!settings) {
+          setupFormContainer.style.display = 'block';
+          moneyStats.style.display = 'none';
+        } else {
+          setupFormContainer.style.display = 'none';
+          moneyStats.style.display = 'block';
+          renderMoneySaved(settings);
+        }
+      });
+    }
+
+    setupForm.addEventListener('submit', (e) => {
+      e.preventDefault();
+      const weeklySpend = parseFloat(weeklySpendInput.value);
+      const stopDate = stopDateInput.value;
+      if (weeklySpend > 0 && stopDate) {
+        const newSettings = {
+          weeklySpend,
+          stopDate
+        };
+        window.electronAPI.saveSettings(newSettings).then(() => {
+          setupFormContainer.style.display = 'none';
+          moneyStats.style.display = 'block';
+          renderMoneySaved(newSettings);
+        });
+      }
+    });
+
+    function renderMoneySaved(settings) {
+      const weeklySpend = settings.weeklySpend;
+      const stopDate = new Date(settings.stopDate);
+      const today = new Date();
+      const diffWeeks = Math.floor((today - stopDate) / (1000 * 60 * 60 * 24 * 7));
+      const saved = diffWeeks * weeklySpend;
+      totalSaved.textContent = saved.toFixed(2);
+      startDate.textContent = stopDate.toDateString();
+      weeklyAmount.textContent = weeklySpend.toFixed(2);
+
+      // Build chart data
+      const labels = [];
+      const data = [];
+      for (let i = 0; i <= diffWeeks; i++) {
+        labels.push(`Week ${i + 1}`);
+        data.push(weeklySpend * (i + 1));
+      }
+
+      const ctx = document.getElementById('savingsChart').getContext('2d');
+      if (chart) chart.destroy(); // re-create if exists
+      chart = new Chart(ctx, {
+        type: 'line',
+        data: {
+          labels: labels,
+          datasets: [{
+            label: 'Money Saved (£)',
+            data: data,
+            borderColor: '#5cb85c',
+            backgroundColor: 'rgba(92, 184, 92, 0.2)',
+            tension: 0.2
+          }]
+        },
+        options: {
+          scales: {
+            y: {
+              beginAtZero: true
+            }
+          }
+        }
+      });
+    }
+
   </script>
 
 </body>

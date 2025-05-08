@@ -1,6 +1,11 @@
 [
   {
     "action": "Blocked Domains",
+    "timestamp": "08/05/2025, 19:53:58",
+    "details": "8 domains"
+  },
+  {
+    "action": "Blocked Domains",
     "timestamp": "08/05/2025, 19:46:40",
     "details": "6 domains"
   },
