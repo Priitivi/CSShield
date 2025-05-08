@@ -12,10 +12,11 @@ const hostsPath = process.platform === 'win32'
   : '/etc/hosts';
 
 const blocklistPath = path.join(__dirname, '../blocklist.json');
+const logsPath = path.join(__dirname, '../logs.json');
 
 function createWindow() {
   const mainWindow = new BrowserWindow({
-    width: 700,
+    width: 900,
     height: 800,
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'),
@@ -23,31 +24,35 @@ function createWindow() {
   });
 
   mainWindow.loadFile(path.join(__dirname, 'index.html'));
+}
 
-  // OPTIONAL: Open DevTools (commented out)
-  // mainWindow.webContents.openDevTools();
+function writeLog(action, details = '') {
+  const timestamp = new Date().toLocaleString();
+  const entry = { action, timestamp, details };
+
+  let logs = [];
+  try {
+    const data = fs.readFileSync(logsPath, 'utf8');
+    logs = JSON.parse(data);
+  } catch (err) {
+    console.error('Failed to read logs:', err);
+  }
+  logs.unshift(entry); // add newest at top
+  fs.writeFileSync(logsPath, JSON.stringify(logs, null, 2));
 }
 
 app.whenReady().then(() => {
   createWindow();
 
-  app.on('activate', function () {
-    if (BrowserWindow.getAllWindows().length === 0) createWindow();
-  });
-
-  // 🔗 Get Blacklist
   ipcMain.handle('get-blacklist', async () => {
     try {
       const data = fs.readFileSync(blocklistPath, 'utf8');
-      const list = JSON.parse(data);
-      return list;
-    } catch (err) {
-      console.error('Error reading blocklist:', err);
+      return JSON.parse(data);
+    } catch {
       return [];
     }
   });
 
-  // 🔗 Add Domain
   ipcMain.handle('add-domain', async (event, domain) => {
     try {
       const data = fs.readFileSync(blocklistPath, 'utf8');
@@ -57,13 +62,11 @@ app.whenReady().then(() => {
         fs.writeFileSync(blocklistPath, JSON.stringify(list, null, 2));
       }
       return list;
-    } catch (err) {
-      console.error('Error adding domain:', err);
+    } catch {
       return [];
     }
   });
 
-  // 🔗 Remove Domain
   ipcMain.handle('remove-domain', async (event, domain) => {
     try {
       const data = fs.readFileSync(blocklistPath, 'utf8');
@@ -71,13 +74,11 @@ app.whenReady().then(() => {
       list = list.filter(d => d !== domain);
       fs.writeFileSync(blocklistPath, JSON.stringify(list, null, 2));
       return list;
-    } catch (err) {
-      console.error('Error removing domain:', err);
+    } catch {
       return [];
     }
   });
 
-  // 🔗 Block Domains (reads real JSON file)
   ipcMain.handle('block-domains', async () => {
     const data = fs.readFileSync(blocklistPath, 'utf8');
     const blockList = JSON.parse(data);
@@ -94,44 +95,36 @@ app.whenReady().then(() => {
     const tempFile = path.join(app.getPath('temp'), 'cs_blocklist.txt');
 
     return new Promise((resolve, reject) => {
-      // 1️⃣ Write blocklist to a temp file
       fs.writeFile(tempFile, blockEntries, (err) => {
         if (err) {
-          console.error('Error writing temp blocklist file:', err);
           reject('Failed to create blocklist file');
           return;
         }
 
-        // 2️⃣ Append temp file to hosts
         const command = `type "${tempFile}" >> "${hostsPath}"`; // Windows style
 
-        sudo.exec(command, options, (error, stdout, stderr) => {
+        sudo.exec(command, options, (error) => {
           if (error) {
-            console.error('Error blocking domains:', error);
             reject('Failed to block domains');
           } else {
-            console.log('Domains blocked successfully.');
-            resolve('Blocked domains successfully');
+            writeLog('Blocked Domains', `${blockList.length} domains`);
+            resolve(`Blocked ${blockList.length} domains successfully`);
           }
         });
       });
     });
   });
 
-  // 🔗 Restore Hosts File
   ipcMain.handle('restore-hosts', async () => {
     return new Promise((resolve, reject) => {
       fs.readFile(hostsPath, 'utf8', (err, data) => {
         if (err) {
-          console.error('Error reading hosts file:', err);
           reject('Failed to read hosts file');
           return;
         }
 
         const dataObj = fs.readFileSync(blocklistPath, 'utf8');
         const list = JSON.parse(dataObj);
-
-        // Remove blocked domains
         const regexParts = list.map(domain => `127\\.0\\.0\\.1\\s+${domain.replace('.', '\\.')}`);
         const blockRegex = new RegExp(`(${regexParts.join('|')})\\s*\\n?`, 'g');
         const cleaned = data.replace(blockRegex, '');
@@ -140,23 +133,30 @@ app.whenReady().then(() => {
 
         fs.writeFile(tmpFile, cleaned, (err) => {
           if (err) {
-            console.error('Error writing temp hosts file:', err);
             reject('Failed to write temp file');
             return;
           }
 
-          sudo.exec(`move "${tmpFile}" "${hostsPath}"`, options, (error, stdout, stderr) => {
+          sudo.exec(`move "${tmpFile}" "${hostsPath}"`, options, (error) => {
             if (error) {
-              console.error('Error restoring hosts file:', error);
               reject('Failed to restore hosts file');
             } else {
-              console.log('Hosts file restored.');
-              resolve('Restored hosts file');
+              writeLog('Restored Hosts File');
+              resolve('Hosts file restored');
             }
           });
         });
       });
     });
+  });
+
+  ipcMain.handle('get-logs', async () => {
+    try {
+      const data = fs.readFileSync(logsPath, 'utf8');
+      return JSON.parse(data);
+    } catch {
+      return [];
+    }
   });
 });
 
