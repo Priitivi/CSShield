@@ -66,11 +66,11 @@
     #blockBtn:hover {
       background-color: #c9302c;
     }
-    #restoreBtn {
+    #restoreBtn, #restoreOriginalBtn {
       background-color: #5bc0de;
       color: white;
     }
-    #restoreBtn:hover {
+    #restoreBtn:hover, #restoreOriginalBtn:hover {
       background-color: #31b0d5;
     }
     #status {
@@ -187,6 +187,7 @@
 
       <button id="blockBtn">🚫 Block Gambling Sites</button>
       <button id="restoreBtn">🔄 Restore Hosts File</button>
+      <button id="restoreOriginalBtn">💾 Restore Original Hosts File</button>
       <div id="status">⚠️ No action taken yet</div>
     </div>
 
@@ -260,13 +261,11 @@
       totalDomains.textContent = blacklist.length;
     }
 
-    // Load blacklist from backend
     window.electronAPI.getBlacklist().then((list) => {
       blacklist = list;
       renderBlacklist();
     });
 
-    // Add domain
     addDomainForm.addEventListener('submit', (e) => {
       e.preventDefault();
       const newDomain = newDomainInput.value.trim();
@@ -279,7 +278,6 @@
       }
     });
 
-    // Remove domain
     domainList.addEventListener('click', (e) => {
       if (e.target.classList.contains('removeBtn')) {
         const domain = e.target.getAttribute('data-domain');
@@ -290,14 +288,14 @@
       }
     });
 
-    // Block & Restore
     const blockBtn = document.getElementById('blockBtn');
     const restoreBtn = document.getElementById('restoreBtn');
+    const restoreOriginalBtn = document.getElementById('restoreOriginalBtn');
     const status = document.getElementById('status');
 
     function updateStatsFromLogs(logs) {
       const lastBlock = logs.find(log => log.action.includes('Blocked'));
-      const lastRestore = logs.find(log => log.action.includes('Restored'));
+      const lastRestore = logs.find(log => log.action.includes('Restored Hosts'));
       lastBlocked.textContent = lastBlock ? lastBlock.timestamp : 'N/A';
       lastRestored.textContent = lastRestore ? lastRestore.timestamp : 'N/A';
     }
@@ -322,6 +320,16 @@
       });
     });
 
+    restoreOriginalBtn.addEventListener('click', () => {
+      window.electronAPI.restoreOriginalHosts().then((result) => {
+        status.textContent = '✅ ' + result;
+        window.electronAPI.getLogs().then(updateStatsFromLogs);
+      }).catch((err) => {
+        console.error(err);
+        status.textContent = '❌ Error restoring original hosts file';
+      });
+    });
+
     // Logs
     const logsList = document.getElementById('logsList');
 
@@ -341,7 +349,6 @@
       });
     }
 
-    // Load logs and stats on startup
     window.electronAPI.getLogs().then(updateStatsFromLogs);
   </script>
 

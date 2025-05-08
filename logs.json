@@ -1,6 +1,16 @@
 [
   {
     "action": "Blocked Domains",
+    "timestamp": "08/05/2025, 19:46:40",
+    "details": "6 domains"
+  },
+  {
+    "action": "Backup Created",
+    "timestamp": "08/05/2025, 19:46:37",
+    "details": "Original hosts file backed up."
+  },
+  {
+    "action": "Blocked Domains",
     "timestamp": "08/05/2025, 19:35:10",
     "details": "6 domains"
   }

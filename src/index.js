@@ -13,6 +13,7 @@ const hostsPath = process.platform === 'win32'
 
 const blocklistPath = path.join(__dirname, '../blocklist.json');
 const logsPath = path.join(__dirname, '../logs.json');
+const backupPath = path.join(__dirname, '../hosts_backup_original');
 
 function createWindow() {
   const mainWindow = new BrowserWindow({
@@ -95,6 +96,19 @@ app.whenReady().then(() => {
     const tempFile = path.join(app.getPath('temp'), 'cs_blocklist.txt');
 
     return new Promise((resolve, reject) => {
+      // First: backup if not exists
+      if (!fs.existsSync(backupPath)) {
+        fs.copyFile(hostsPath, backupPath, (err) => {
+          if (err) {
+            console.error('Backup failed:', err);
+          } else {
+            console.log('Backup created.');
+            writeLog('Backup Created', 'Original hosts file backed up.');
+          }
+        });
+      }
+
+      // Write temp file
       fs.writeFile(tempFile, blockEntries, (err) => {
         if (err) {
           reject('Failed to create blocklist file');
@@ -146,6 +160,26 @@ app.whenReady().then(() => {
             }
           });
         });
+      });
+    });
+  });
+
+  ipcMain.handle('restore-original', async () => {
+    return new Promise((resolve, reject) => {
+      if (!fs.existsSync(backupPath)) {
+        reject('No backup found.');
+        return;
+      }
+
+      const command = `copy "${backupPath}" "${hostsPath}"`; // Windows style
+
+      sudo.exec(command, options, (error) => {
+        if (error) {
+          reject('Failed to restore original hosts file');
+        } else {
+          writeLog('Restored Original Hosts File');
+          resolve('Original hosts file restored from backup');
+        }
       });
     });
   });
