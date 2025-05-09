@@ -28,7 +28,7 @@ By developing CSShield, I'm combining personal experience with technical experti
 
 | Home Screen |
 |-------------|
-| ![Home](./github/csshield/home.png) |
+| ![Home](Home.png) |
 
 ---
 
