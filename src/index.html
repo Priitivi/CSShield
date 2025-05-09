@@ -12,7 +12,6 @@
       background-color: #1e1e1e;
       color: #f0f0f0;
     }
-    /* Sidebar */
     #sidebar {
       width: 250px;
       background-color: #2c2c2c;
@@ -40,7 +39,6 @@
       background-color: #5bc0de;
       color: #fff;
     }
-    /* Main content */
     #main {
       flex: 1;
       padding: 30px;
@@ -73,16 +71,6 @@
     #restoreBtn:hover, #restoreOriginalBtn:hover {
       background-color: #31b0d5;
     }
-    #status {
-      margin-top: 20px;
-      font-size: 1.1rem;
-    }
-    .stats {
-      display: flex;
-      gap: 20px;
-      margin: 20px 0;
-      flex-wrap: wrap;
-    }
     .stat-card {
       background-color: #2c2c2c;
       padding: 20px;
@@ -92,19 +80,27 @@
       text-align: center;
       box-shadow: 0 0 10px rgba(0,0,0,0.3);
     }
-    /* Blacklist */
-    #domainList {
+    #domainList, #logsList {
       list-style: none;
       padding: 0;
       margin-top: 20px;
-      max-width: 600px;
+      max-width: 700px;
     }
-    .domainItem {
+    .domainItem, .logItem {
       display: flex;
       justify-content: space-between;
       align-items: center;
       padding: 8px 0;
       border-bottom: 1px solid #444;
+    }
+    .logItem {
+      flex-direction: column;
+      align-items: flex-start;
+      background-color: #2c2c2c;
+      padding: 15px;
+      border-radius: 5px;
+      margin-bottom: 10px;
+      box-shadow: 0 0 5px rgba(0,0,0,0.2);
     }
     .removeBtn {
       background-color: #d9534f;
@@ -117,44 +113,6 @@
     .removeBtn:hover {
       background-color: #c9302c;
     }
-    #addDomainForm {
-      display: flex;
-      margin-top: 20px;
-      max-width: 600px;
-    }
-    #newDomain {
-      flex: 1;
-      padding: 10px;
-      border-radius: 5px;
-      border: none;
-      margin-right: 10px;
-    }
-    #addBtn {
-      background-color: #5cb85c;
-      color: white;
-      border: none;
-      border-radius: 5px;
-      padding: 10px 20px;
-      cursor: pointer;
-    }
-    #addBtn:hover {
-      background-color: #449d44;
-    }
-    /* Logs */
-    #logsList {
-      list-style: none;
-      padding: 0;
-      margin-top: 20px;
-      max-width: 700px;
-    }
-    .logItem {
-      background-color: #2c2c2c;
-      padding: 15px;
-      border-radius: 5px;
-      margin-bottom: 10px;
-      box-shadow: 0 0 5px rgba(0,0,0,0.2);
-    }
-    /* Money Saved */
     #moneyStats {
       margin-top: 20px;
       font-size: 1.2rem;
@@ -186,6 +144,15 @@
     #setupForm button:hover {
       background-color: #449d44;
     }
+    #infoSection h3 {
+      margin-top: 20px;
+    }
+    #infoSection p {
+      line-height: 1.6;
+    }
+    #infoSection ul {
+      margin-left: 20px;
+    }
   </style>
 </head>
 <body>
@@ -197,6 +164,7 @@
     <div class="nav-link" data-section="blacklist">📝 Manage Blacklist</div>
     <div class="nav-link" data-section="logs">📊 Logs</div>
     <div class="nav-link" data-section="moneySaved">💰 Money Saved</div>
+    <div class="nav-link" data-section="info">📖 Info</div>
   </div>
 
   <!-- Main Content -->
@@ -204,7 +172,6 @@
     <!-- Dashboard Section -->
     <div id="dashboardSection">
       <h2>Dashboard</h2>
-
       <div class="stats">
         <div class="stat-card">
           <h3>Total Domains</h3>
@@ -219,7 +186,6 @@
           <p id="lastRestored">N/A</p>
         </div>
       </div>
-
       <button id="blockBtn">🚫 Block Gambling Sites</button>
       <button id="restoreBtn">🔄 Restore Hosts File</button>
       <button id="restoreOriginalBtn">💾 Restore Original Hosts File</button>
@@ -262,237 +228,249 @@
         <canvas id="savingsChart"></canvas>
       </div>
     </div>
-  </div>
 
-  <!-- Chart.js -->
-  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-
-  <script>
-    // Sidebar nav switching
-    const navLinks = document.querySelectorAll('.nav-link');
-    const sections = {
-      dashboard: document.getElementById('dashboardSection'),
-      blacklist: document.getElementById('blacklistSection'),
-      logs: document.getElementById('logsSection'),
-      moneySaved: document.getElementById('moneySavedSection')
-    };
-
-    navLinks.forEach(link => {
-      link.addEventListener('click', () => {
-        navLinks.forEach(l => l.classList.remove('active'));
-        link.classList.add('active');
-
-        const target = link.getAttribute('data-section');
-        Object.keys(sections).forEach(key => {
-          sections[key].style.display = (key === target) ? 'block' : 'none';
+    <!-- Info Section -->
+    <div id="infoSection" style="display:none;">
+      <h2>📖 About CSShield</h2>
+      <h3>🛡️ What is CSShield?</h3>
+      <p>
+        CSShield is a local desktop app that helps you block Counter-Strike-related gambling websites. It works by modifying your system's <code>hosts</code> file to prevent access to harmful domains.
+      </p>
+      <h3>⚙️ How It Works</h3>
+      <p>
+        - When you click "Block Gambling Sites," CSShield writes the list of domains into your system's <code>hosts</code> file, redirecting them to <code>127.0.0.1</code> (your own machine), which effectively blocks access.<br><br>
+        - The app automatically backs up your original hosts file the first time you block, so you can safely restore it anytime.
+      </p>
+      <h3>🛠 Technologies Used</h3>
+      <ul>
+        <li>Electron.js (desktop app)</li>
+        <li>Node.js + IPC</li>
+        <li>Chart.js (Money Saved chart)</li>
+        <li>sudo-prompt (for admin permissions)</li>
+        <li>JSON storage (blacklist, logs, settings)</li>
+      </ul>
+      <h3>❓ FAQ</h3>
+      <p><strong>Q: Is this permanent?</strong><br>
+      ➔ The block is permanent until you restore the hosts file using CSShield.</p>
+      <p><strong>Q: Will it block other sites accidentally?</strong><br>
+      ➔ CSShield only blocks domains that are on your custom blacklist. Nothing else is affected.</p>
+      <p><strong>Q: How can I fully undo all changes?</strong><br>
+      ➔ Use the "Restore Original Hosts File" button to return to your exact original file (backed up automatically).</p>
+    </div>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script>
+      const navLinks = document.querySelectorAll('.nav-link');
+      const sections = {
+        dashboard: document.getElementById('dashboardSection'),
+        blacklist: document.getElementById('blacklistSection'),
+        logs: document.getElementById('logsSection'),
+        moneySaved: document.getElementById('moneySavedSection'),
+        info: document.getElementById('infoSection')
+      };
+  
+      navLinks.forEach(link => {
+        link.addEventListener('click', () => {
+          navLinks.forEach(l => l.classList.remove('active'));
+          link.classList.add('active');
+          const target = link.getAttribute('data-section');
+          Object.keys(sections).forEach(key => {
+            sections[key].style.display = (key === target) ? 'block' : 'none';
+          });
+          if (target === 'logs') loadLogs();
+          if (target === 'moneySaved') loadMoneySaved();
         });
-
-        if (target === 'logs') loadLogs();
-        if (target === 'moneySaved') loadMoneySaved();
       });
-    });
-
-    // Blacklist + Stats logic stays the same...
-    // I'll pause here for length. Let me know to send the rest of the JS!
-        // Blacklist + Stats
-        const totalDomains = document.getElementById('totalDomains');
-    const lastBlocked = document.getElementById('lastBlocked');
-    const lastRestored = document.getElementById('lastRestored');
-
-    const domainList = document.getElementById('domainList');
-    const addDomainForm = document.getElementById('addDomainForm');
-    const newDomainInput = document.getElementById('newDomain');
-    let blacklist = [];
-
-    function renderBlacklist() {
-      domainList.innerHTML = '';
-      blacklist.forEach((domain) => {
-        const li = document.createElement('li');
-        li.className = 'domainItem';
-        li.innerHTML = `
-          <span>${domain}</span>
-          <button class="removeBtn" data-domain="${domain}">❌ Remove</button>
-        `;
-        domainList.appendChild(li);
-      });
-      totalDomains.textContent = blacklist.length;
-    }
-
-    window.electronAPI.getBlacklist().then((list) => {
-      blacklist = list;
-      renderBlacklist();
-    });
-
-    addDomainForm.addEventListener('submit', (e) => {
-      e.preventDefault();
-      const newDomain = newDomainInput.value.trim();
-      if (newDomain && !blacklist.includes(newDomain)) {
-        window.electronAPI.addDomain(newDomain).then((list) => {
-          blacklist = list;
-          renderBlacklist();
-          newDomainInput.value = '';
-        });
-      }
-    });
-
-    domainList.addEventListener('click', (e) => {
-      if (e.target.classList.contains('removeBtn')) {
-        const domain = e.target.getAttribute('data-domain');
-        window.electronAPI.removeDomain(domain).then((list) => {
-          blacklist = list;
-          renderBlacklist();
-        });
-      }
-    });
-
-    const blockBtn = document.getElementById('blockBtn');
-    const restoreBtn = document.getElementById('restoreBtn');
-    const restoreOriginalBtn = document.getElementById('restoreOriginalBtn');
-    const status = document.getElementById('status');
-
-    function updateStatsFromLogs(logs) {
-      const lastBlock = logs.find(log => log.action.includes('Blocked'));
-      const lastRestore = logs.find(log => log.action.includes('Restored Hosts'));
-      lastBlocked.textContent = lastBlock ? lastBlock.timestamp : 'N/A';
-      lastRestored.textContent = lastRestore ? lastRestore.timestamp : 'N/A';
-    }
-
-    blockBtn.addEventListener('click', () => {
-      window.electronAPI.blockDomains().then((result) => {
-        status.textContent = '✅ ' + result;
-        window.electronAPI.getLogs().then(updateStatsFromLogs);
-      }).catch((err) => {
-        console.error(err);
-        status.textContent = '❌ Error blocking domains';
-      });
-    });
-
-    restoreBtn.addEventListener('click', () => {
-      window.electronAPI.restoreHosts().then((result) => {
-        status.textContent = '✅ ' + result;
-        window.electronAPI.getLogs().then(updateStatsFromLogs);
-      }).catch((err) => {
-        console.error(err);
-        status.textContent = '❌ Error restoring hosts file';
-      });
-    });
-
-    restoreOriginalBtn.addEventListener('click', () => {
-      window.electronAPI.restoreOriginalHosts().then((result) => {
-        status.textContent = '✅ ' + result;
-        window.electronAPI.getLogs().then(updateStatsFromLogs);
-      }).catch((err) => {
-        console.error(err);
-        status.textContent = '❌ Error restoring original hosts file';
-      });
-    });
-
-    // Logs
-    const logsList = document.getElementById('logsList');
-
-    function loadLogs() {
-      window.electronAPI.getLogs().then((logs) => {
-        logsList.innerHTML = '';
-        if (logs.length === 0) {
-          logsList.innerHTML = '<li>No logs yet.</li>';
-          return;
-        }
-        logs.forEach(log => {
+  
+      // === Blacklist ===
+      const domainList = document.getElementById('domainList');
+      const addDomainForm = document.getElementById('addDomainForm');
+      const newDomainInput = document.getElementById('newDomain');
+      const totalDomains = document.getElementById('totalDomains');
+      let blacklist = [];
+  
+      function renderBlacklist() {
+        domainList.innerHTML = '';
+        blacklist.forEach((domain) => {
           const li = document.createElement('li');
-          li.className = 'logItem';
-          li.innerHTML = `<strong>${log.action}</strong><br><small>${log.timestamp}</small>${log.details ? `<br><em>${log.details}</em>` : ''}`;
-          logsList.appendChild(li);
+          li.className = 'domainItem';
+          li.innerHTML = `
+            <span>${domain}</span>
+            <button class="removeBtn" data-domain="${domain}">❌ Remove</button>
+          `;
+          domainList.appendChild(li);
         });
+        totalDomains.textContent = blacklist.length;
+      }
+  
+      window.electronAPI.getBlacklist().then((list) => {
+        blacklist = list;
+        renderBlacklist();
       });
-    }
-
-    window.electronAPI.getLogs().then(updateStatsFromLogs);
-
-    // === Money Saved ===
-    const setupFormContainer = document.getElementById('setupFormContainer');
-    const setupForm = document.getElementById('setupForm');
-    const weeklySpendInput = document.getElementById('weeklySpend');
-    const stopDateInput = document.getElementById('stopDate');
-
-    const moneyStats = document.getElementById('moneyStats');
-    const totalSaved = document.getElementById('totalSaved');
-    const startDate = document.getElementById('startDate');
-    const weeklyAmount = document.getElementById('weeklyAmount');
-    let chart;
-
-    function loadMoneySaved() {
-      window.electronAPI.getSettings().then((settings) => {
-        if (!settings) {
-          setupFormContainer.style.display = 'block';
-          moneyStats.style.display = 'none';
-        } else {
-          setupFormContainer.style.display = 'none';
-          moneyStats.style.display = 'block';
-          renderMoneySaved(settings);
+  
+      addDomainForm.addEventListener('submit', (e) => {
+        e.preventDefault();
+        const newDomain = newDomainInput.value.trim();
+        if (newDomain && !blacklist.includes(newDomain)) {
+          window.electronAPI.addDomain(newDomain).then((list) => {
+            blacklist = list;
+            renderBlacklist();
+            newDomainInput.value = '';
+          });
         }
       });
-    }
-
-    setupForm.addEventListener('submit', (e) => {
-      e.preventDefault();
-      const weeklySpend = parseFloat(weeklySpendInput.value);
-      const stopDate = stopDateInput.value;
-      if (weeklySpend > 0 && stopDate) {
-        const newSettings = {
-          weeklySpend,
-          stopDate
-        };
-        window.electronAPI.saveSettings(newSettings).then(() => {
-          setupFormContainer.style.display = 'none';
-          moneyStats.style.display = 'block';
-          renderMoneySaved(newSettings);
+  
+      domainList.addEventListener('click', (e) => {
+        if (e.target.classList.contains('removeBtn')) {
+          const domain = e.target.getAttribute('data-domain');
+          window.electronAPI.removeDomain(domain).then((list) => {
+            blacklist = list;
+            renderBlacklist();
+          });
+        }
+      });
+  
+      // === Logs ===
+      const logsList = document.getElementById('logsList');
+      function loadLogs() {
+        window.electronAPI.getLogs().then((logs) => {
+          logsList.innerHTML = '';
+          if (logs.length === 0) {
+            logsList.innerHTML = '<li>No logs yet.</li>';
+            return;
+          }
+          logs.forEach(log => {
+            const li = document.createElement('li');
+            li.className = 'logItem';
+            li.innerHTML = `<strong>${log.action}</strong><br><small>${log.timestamp}</small>${log.details ? `<br><em>${log.details}</em>` : ''}`;
+            logsList.appendChild(li);
+          });
         });
       }
-    });
-
-    function renderMoneySaved(settings) {
-      const weeklySpend = settings.weeklySpend;
-      const stopDate = new Date(settings.stopDate);
-      const today = new Date();
-      const diffWeeks = Math.floor((today - stopDate) / (1000 * 60 * 60 * 24 * 7));
-      const saved = diffWeeks * weeklySpend;
-      totalSaved.textContent = saved.toFixed(2);
-      startDate.textContent = stopDate.toDateString();
-      weeklyAmount.textContent = weeklySpend.toFixed(2);
-
-      // Build chart data
-      const labels = [];
-      const data = [];
-      for (let i = 0; i <= diffWeeks; i++) {
-        labels.push(`Week ${i + 1}`);
-        data.push(weeklySpend * (i + 1));
+  
+      // === Dashboard Stats ===
+      const lastBlocked = document.getElementById('lastBlocked');
+      const lastRestored = document.getElementById('lastRestored');
+      const blockBtn = document.getElementById('blockBtn');
+      const restoreBtn = document.getElementById('restoreBtn');
+      const restoreOriginalBtn = document.getElementById('restoreOriginalBtn');
+      const status = document.getElementById('status');
+  
+      function updateStatsFromLogs(logs) {
+        const lastBlock = logs.find(log => log.action.includes('Blocked'));
+        const lastRestore = logs.find(log => log.action.includes('Restored Hosts'));
+        lastBlocked.textContent = lastBlock ? lastBlock.timestamp : 'N/A';
+        lastRestored.textContent = lastRestore ? lastRestore.timestamp : 'N/A';
       }
-
-      const ctx = document.getElementById('savingsChart').getContext('2d');
-      if (chart) chart.destroy(); // re-create if exists
-      chart = new Chart(ctx, {
-        type: 'line',
-        data: {
-          labels: labels,
-          datasets: [{
-            label: 'Money Saved (£)',
-            data: data,
-            borderColor: '#5cb85c',
-            backgroundColor: 'rgba(92, 184, 92, 0.2)',
-            tension: 0.2
-          }]
-        },
-        options: {
-          scales: {
-            y: {
-              beginAtZero: true
+  
+      window.electronAPI.getLogs().then(updateStatsFromLogs);
+  
+      blockBtn.addEventListener('click', () => {
+        window.electronAPI.blockDomains().then((result) => {
+          status.textContent = '✅ ' + result;
+          window.electronAPI.getLogs().then(updateStatsFromLogs);
+        }).catch((err) => {
+          console.error(err);
+          status.textContent = '❌ Error blocking domains';
+        });
+      });
+  
+      restoreBtn.addEventListener('click', () => {
+        window.electronAPI.restoreHosts().then((result) => {
+          status.textContent = '✅ ' + result;
+          window.electronAPI.getLogs().then(updateStatsFromLogs);
+        }).catch((err) => {
+          console.error(err);
+          status.textContent = '❌ Error restoring hosts file';
+        });
+      });
+  
+      restoreOriginalBtn.addEventListener('click', () => {
+        window.electronAPI.restoreOriginalHosts().then((result) => {
+          status.textContent = '✅ ' + result;
+          window.electronAPI.getLogs().then(updateStatsFromLogs);
+        }).catch((err) => {
+          console.error(err);
+          status.textContent = '❌ Error restoring original hosts file';
+        });
+      });
+  
+      // === Money Saved ===
+      const setupFormContainer = document.getElementById('setupFormContainer');
+      const setupForm = document.getElementById('setupForm');
+      const weeklySpendInput = document.getElementById('weeklySpend');
+      const stopDateInput = document.getElementById('stopDate');
+      const moneyStats = document.getElementById('moneyStats');
+      const totalSaved = document.getElementById('totalSaved');
+      const startDate = document.getElementById('startDate');
+      const weeklyAmount = document.getElementById('weeklyAmount');
+      let chart;
+  
+      function loadMoneySaved() {
+        window.electronAPI.getSettings().then((settings) => {
+          if (!settings) {
+            setupFormContainer.style.display = 'block';
+            moneyStats.style.display = 'none';
+          } else {
+            setupFormContainer.style.display = 'none';
+            moneyStats.style.display = 'block';
+            renderMoneySaved(settings);
+          }
+        });
+      }
+  
+      setupForm.addEventListener('submit', (e) => {
+        e.preventDefault();
+        const weeklySpend = parseFloat(weeklySpendInput.value);
+        const stopDate = stopDateInput.value;
+        if (weeklySpend > 0 && stopDate) {
+          const newSettings = { weeklySpend, stopDate };
+          window.electronAPI.saveSettings(newSettings).then(() => {
+            setupFormContainer.style.display = 'none';
+            moneyStats.style.display = 'block';
+            renderMoneySaved(newSettings);
+          });
+        }
+      });
+  
+      function renderMoneySaved(settings) {
+        const weeklySpend = settings.weeklySpend;
+        const stopDate = new Date(settings.stopDate);
+        const today = new Date();
+        const diffWeeks = Math.floor((today - stopDate) / (1000 * 60 * 60 * 24 * 7));
+        const saved = diffWeeks * weeklySpend;
+        totalSaved.textContent = saved.toFixed(2);
+        startDate.textContent = stopDate.toDateString();
+        weeklyAmount.textContent = weeklySpend.toFixed(2);
+  
+        const labels = [];
+        const data = [];
+        for (let i = 0; i <= diffWeeks; i++) {
+          labels.push(`Week ${i + 1}`);
+          data.push(weeklySpend * (i + 1));
+        }
+  
+        const ctx = document.getElementById('savingsChart').getContext('2d');
+        if (chart) chart.destroy();
+        chart = new Chart(ctx, {
+          type: 'line',
+          data: {
+            labels: labels,
+            datasets: [{
+              label: 'Money Saved (£)',
+              data: data,
+              borderColor: '#5cb85c',
+              backgroundColor: 'rgba(92, 184, 92, 0.2)',
+              tension: 0.2
+            }]
+          },
+          options: {
+            scales: {
+              y: {
+                beginAtZero: true
+              }
             }
           }
-        }
-      });
-    }
-
-  </script>
-
-</body>
-</html>
+        });
+      }
+    </script>
+  
