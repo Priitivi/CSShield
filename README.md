@@ -2,7 +2,7 @@
 
 CSShield is a local desktop app that **blocks Counter-Strike-related gambling websites** to help users protect themselves from harmful gambling content.
 
-Built with ❤️ using **Electron + Node.js**, this app modifies your system's `hosts` file to block known gambling domains and provides a clean, user-friendly dashboard.
+Built with **Electron + Node.js**, this app modifies your system's `hosts` file to block known gambling domains and provides a clean, user-friendly dashboard.
 
 ---
 ## 🙌 Why This Exists
