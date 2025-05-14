@@ -7,7 +7,7 @@ Built with **Electron + Node.js**, this app modifies your system's `hosts` file 
 ---
 ## 🙌 Why This Exists
 
-Counter-Strike gambling has become a massive, yet dangerously unregulated industry. Many players — especially younger gamers — are exposed to betting on skins, cases, and roulette-style gambling without realizing the real risks.
+Counter-Strike gambling has become a massive, yet dangerously unregulated industry. Many players — especially younger gamers — are exposed to betting on skins, cases, and roulette-style gambling without realising the real risks.
 
 As someone who's personally witnessed the harm and addiction that these sites can cause, I wanted to build something meaningful:
 🔒 A tool that empowers players to take back control and protect themselves from this harmful content.
